@@ -1,0 +1,113 @@
+package com.azure.aemcode.core.use;
+
+import java.io.InputStream;
+
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.sling.api.resource.Resource;
+import org.apache.sling.api.resource.ResourceResolver;
+import org.apache.sling.api.resource.ValueMap;
+import org.apache.sling.commons.json.JSONArray;
+import org.apache.sling.commons.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.adobe.cq.sightly.WCMUsePojo;
+import com.day.cq.dam.api.Asset;
+import com.day.cq.dam.api.Rendition;
+
+public class ExcelUse extends WCMUsePojo {
+
+	private ResourceResolver resourceResolver;
+	private Resource resource;
+	private Asset asset;
+	private Rendition file;
+	private ValueMap valueMap;
+	private InputStream file1;
+	private JSONArray jsonArray;
+	private Logger log = LoggerFactory.getLogger(getClass());;
+	private XSSFWorkbook workbook;
+	private XSSFSheet sheet;
+	private XSSFCell cell1;
+	private XSSFRow row;
+	private XSSFRow row2;
+	private XSSFCell cell2;
+	private int x;
+
+	public String getJson() {
+		String result = jsonArray.toString();
+		return result;
+	}
+
+	@Override
+	public void activate() throws Exception {
+		log.info("Method is caalled ================================>");
+		resourceResolver = getResourceResolver();
+		// this is one way to get file
+
+		resource = resourceResolver.getResource("/content/dam/myproject/Excel.xlsx");
+		asset = resource.adaptTo(Asset.class);
+		file = asset.getOriginal();
+		log.info("file is{}", file);
+		valueMap = file.getChild("jcr:content").getValueMap();
+		log.info("88888888888888888888888888");
+
+		InputStream object = (InputStream) valueMap.get("jcr:data");
+
+		// by using adaptto
+		/*
+		 * resource = resourceResolver.getResource(
+		 * "/content/dam/myproject/Excel/jcr:content/renditions"); file1 =
+		 * resource.adaptTo(InputStream.class);
+		 */
+		/*
+		 * XSSFWorkbook workbook = new XSSFWorkbook(file1); sheet =
+		 * workbook.getSheetAt(0); jsonArray = new JSONArray(); for (int j = 1; j < 5;
+		 * j++) { String[] keys = new String[4]; String[] values = new String[4]; for
+		 * (int i = 0; i < 4; i++) { cell1 = sheet.getCellComment(i, 0); cell2 =
+		 * sheet.getCellComment(i, j); keys[i] = .getContents();// slno values[i]
+		 * =.getContents();// 1 json.putOpt(keys[i], values[i]);
+		 */
+		workbook = new XSSFWorkbook(object);
+		jsonArray = new JSONArray();
+		sheet = workbook.getSheetAt(0);
+		String[] values = new String[4];
+		String[] keys = new String[4];
+		Double[] val = new Double[4];
+		log.info("last row is{}",sheet.getLastRowNum()) ;
+		//log.info("last cell is{}",row.getLastCellNum()) ;
+		
+		for (int i = 0; i < 4; i++) {
+			row = sheet.getRow(0);
+			cell1 = row.getCell(i);
+			keys[i] = cell1.getStringCellValue();
+			log.info(" keys are {}" , keys[i]);
+		}
+		for (int k = 1; k < sheet.getLastRowNum()+1; k++) {
+			row2 = sheet.getRow(k);
+			
+			JSONObject json = new JSONObject();
+			for (int c = 0; c < row.getLastCellNum(); c++) {
+				cell2 = row2.getCell(c);
+				log.info(k + "th row ----------------------------------------------------------------------");
+				if (cell2.getCellType() == XSSFCell.CELL_TYPE_NUMERIC) {
+					json.putOpt(keys[c], cell2.getNumericCellValue());
+					log.info("json values are{}", json);
+				} else {
+					values[c] = cell2.getStringCellValue();
+					log.info("values are{}", values[c]);
+					json.putOpt(keys[c], values[c]);
+					log.info("json values are{}", json);
+				}
+			}
+			jsonArray.put(json);
+			// json.putOpt(keys[i], values[i]);
+		}
+		
+		log.info("json array is{}", jsonArray);
+		log.info("k succccccccccccccccccccccccccccccccccccccccccesssssssssssssssssssssssss");
+
+	}
+}
